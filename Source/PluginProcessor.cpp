@@ -93,10 +93,12 @@ void PhaseAnalyzerAudioProcessor::setParameter(int index, float newValue)
     switch (index)
     {
         case kframeSize:
-            frameSize = (int) newValue;
-            resetBuffer();
-            sampleDelay = 0;
-            switch (frameSize) {
+            if ((int)newValue % 64 == 0) //Guard needed on Windows where we can get a newValue of 1.0f before real one comes later
+            {
+                frameSize = (int)newValue;
+                resetBuffer();
+                sampleDelay = 0;
+                switch (frameSize) {
                 case 64:
                     frameSizeIndex = 0;
                     break;
@@ -117,6 +119,7 @@ void PhaseAnalyzerAudioProcessor::setParameter(int index, float newValue)
                     break;
                 default:
                     break;
+                }
             }
             break;
         case khopSizeDivisor:
@@ -436,6 +439,7 @@ void PhaseAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
     if (samplesAdded == analysisBufferLength_){
         
         // run GCC-PHAT here
+        jassert(frameSize % 64 == 0);
         int f = frameSize;
         int d = hopSizeDivisor;
         
