@@ -69,9 +69,9 @@ public:
     void correctDelay(AudioSampleBuffer& buffer);
     
     //==============================================================================
-    FFT fft[7]  {{6, false}, {7, false}, {8, false}, {9, false}, {10, false}, {11, false}, {12, false}};
-    FFT ifft[7] {{6, true},  {7, true},  {8, true},  {9, true},  {10, true},  {11, true},  {12, true}};
-    FFT::Complex L_td[4096], R_td[4096], L_fd[4096], R_fd[4096], S_td[4096], S_fd[4096];
+    juce::dsp::FFT fft[7]  {{6}, {7}, {8}, {9}, {10}, {11}, {12}};
+    juce::dsp::FFT ifft[7] {{6},  {7},  {8},  {9},  {10},  {11},  {12}};
+    juce::dsp::Complex<float> L_td[4096], R_td[4096], L_fd[4096], R_fd[4096], S_td[4096], S_fd[4096];
     //==============================================================================
     
     enum Parameters

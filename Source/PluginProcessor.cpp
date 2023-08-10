@@ -150,7 +150,7 @@ const String PhaseAnalyzerAudioProcessor::getParameterName(int index)
         default:            break;
     }
     
-    return String::empty;
+    return String();
 }
 
 const String PhaseAnalyzerAudioProcessor::getParameterText(int index)
@@ -312,34 +312,34 @@ int PhaseAnalyzerAudioProcessor::gccPHAT(int frame)
         // copy frameSize samples into Complex Time Domain buffers
         const float* L_gccData = gccBuffer.getReadPointer(0);
         for (int i = 0; i < frameSize; i++){
-            L_td[i].r = L_gccData[i];
-            L_td[i].i = 0;
+            L_td[i].real(L_gccData[i]);
+            L_td[i].imag(0);
  
         }
 
         const float* R_gccData = gccBuffer.getReadPointer(1);
         for (int i = 0; i < frameSize; i++){
-            R_td[i].r = R_gccData[i];
-            R_td[i].i = 0;
+            R_td[i].real(R_gccData[i]);
+            R_td[i].imag(0);
         }
         
-        fft[frameSizeIndex].perform(L_td, L_fd);
-        fft[frameSizeIndex].perform(R_td, R_fd);
+        fft[frameSizeIndex].perform(L_td, L_fd, false);
+        fft[frameSizeIndex].perform(R_td, R_fd, false);
         
         // Core GCC-PHAT algorithm
         for (int i = 0; i < frameSize; i++)
         {          
-            S_fd[i].r = (L_fd[i].r * R_fd[i].r) + (L_fd[i].i * R_fd[i].i);
-            S_fd[i].i = (L_fd[i].i * R_fd[i].r) - (L_fd[i].r * R_fd[i].i);
-            absofS[i] = sqrt(powf(S_fd[i].r, 2) + powf(S_fd[i].i, 2));
-            S_fd[i].r = S_fd[i].r / absofS[i];
-            S_fd[i].i = S_fd[i].i / absofS[i];
+            S_fd[i].real((L_fd[i].real() * R_fd[i].real()) + (L_fd[i].imag() * R_fd[i].imag()));
+            S_fd[i].imag((L_fd[i].imag() * R_fd[i].real()) - (L_fd[i].real() * R_fd[i].imag()));
+            absofS[i] = sqrt(powf(S_fd[i].real(), 2) + powf(S_fd[i].imag(), 2));
+            S_fd[i].real(S_fd[i].real() / absofS[i]);
+            S_fd[i].imag(S_fd[i].imag() / absofS[i]);
         }
         
-        ifft[frameSizeIndex].perform(S_fd, S_td);    
+        ifft[frameSizeIndex].perform(S_fd, S_td, true);    
                 
         for (int i = 0; i < frameSize; i++){
-            S[i] = S_td[i].r;
+            S[i] = S_td[i].real();
         }
         
         // find max
@@ -445,7 +445,7 @@ void PhaseAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         int numFrames = (analysisBufferLength_ - frameSize)/hopSize;
         
         // array to hold delay estimations
-        int frameDelay[numFrames];
+        int* frameDelay = new int[numFrames];
         
         // iterator for frameDelay array (number of frames analyzed)
         int i = 0;
@@ -478,6 +478,9 @@ void PhaseAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
             }
             accuracy = floor((float(count) / float(i))*100);
         }
+
+        delete frameDelay;
+
         resetBuffer();
     }
     
@@ -575,7 +578,7 @@ void PhaseAnalyzerAudioProcessor::setStateInformation (const void* data, int siz
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-    ScopedPointer<XmlElement> xmlState (getXmlFromBinary(data, sizeInBytes));
+    std::unique_ptr<XmlElement> xmlState (getXmlFromBinary(data, sizeInBytes));
     
     if(xmlState != 0)
     {
